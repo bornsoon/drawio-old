@@ -28,3 +28,4 @@ The full packaged .war of the client and servlets is built when the project is t
 Supported Browsers
 ------------------
 draw.io supports IE 11, Chrome 32+, Firefox 38+, Safari 9.1.x, 10.1.x and 11.0.x, Opera 20+, Native Android browser 5.1.x+, the default browser in the current and previous major iOS versions (e.g. 11.2.x and 10.3.x) and Edge 23+.
+# drawio-old
