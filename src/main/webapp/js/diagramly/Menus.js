@@ -1031,6 +1031,58 @@
 				this.addSubmenu('testDevelop', menu, parent);
 			}
 		})));
+
+		this.put('additionalFeatures', new Menu(mxUtils.bind(this, function(menu, parent)
+		{
+			this.addMenuItems(menu, ['importXmlWithBackground'], parent);
+		})));
+
+		this.editorUi.actions.addAction('importXmlWithBackground', mxUtils.bind(this, function()
+		{
+			var input = document.createElement('input');
+			input.setAttribute('type', 'file');
+			input.setAttribute('accept', '.xml');
+			
+			mxEvent.addListener(input, 'change', mxUtils.bind(this, function(evt)
+			{
+				if (input.files != null)
+				{
+					var reader = new FileReader();
+					
+					reader.onload = mxUtils.bind(this, function(e)
+					{
+						var xml = e.target.result;
+						var doc = mxUtils.parseXml(xml);
+						var diagramNode = doc.documentElement;
+						
+						if (diagramNode != null && diagramNode.nodeName == 'diagram')
+						{
+							var backgroundNode = diagramNode.getElementsByTagName('background')[0];
+							var modelNode = diagramNode.getElementsByTagName('mxGraphModel')[0];
+							
+							if (backgroundNode != null)
+							{
+								var src = backgroundNode.getAttribute('src');
+								this.editorUi.setBackgroundImage(new mxImage(src, 0, 0));
+							}
+							
+							if (modelNode != null)
+							{
+								var xml = mxUtils.getXml(modelNode);
+								this.editorUi.importXml(xml);
+							}
+						}
+					});
+					
+					reader.readAsText(input.files[0]);
+				}
+			}));
+			
+			input.click();
+		}));
+
+		mxResources.parse('additionalFeatures=추가 기능');
+		mxResources.parse('importXmlWithBackground=XML 가져오기 (배경 포함)');
 		
 		// Only visible in test mode
 		if (urlParams['test'] == '1')
