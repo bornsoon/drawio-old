@@ -1031,6 +1031,58 @@
 				this.addSubmenu('testDevelop', menu, parent);
 			}
 		})));
+
+		this.put('additionalFeatures', new Menu(mxUtils.bind(this, function(menu, parent)
+		{
+			this.addMenuItems(menu, ['importXmlWithBackground'], parent);
+		})));
+
+		this.editorUi.actions.addAction('importXmlWithBackground', mxUtils.bind(this, function()
+		{
+			var input = document.createElement('input');
+			input.setAttribute('type', 'file');
+			input.setAttribute('accept', '.xml');
+
+			mxEvent.addListener(input, 'change', mxUtils.bind(this, function(evt)
+			{
+				if (input.files != null)
+				{
+					var reader = new FileReader();
+
+					reader.onload = mxUtils.bind(this, function(e)
+					{
+						var xml = e.target.result;
+						var doc = mxUtils.parseXml(xml);
+						var diagramNode = doc.documentElement;
+
+						if (diagramNode != null && diagramNode.nodeName == 'diagram')
+						{
+							var backgroundNode = diagramNode.getElementsByTagName('background')[0];
+							var modelNode = diagramNode.getElementsByTagName('mxGraphModel')[0];
+
+							if (backgroundNode != null)
+							{
+								var src = backgroundNode.getAttribute('src');
+								this.editorUi.setBackgroundImage(new mxImage(src, 0, 0));
+							}
+
+							if (modelNode != null)
+							{
+								var xml = mxUtils.getXml(modelNode);
+								this.editorUi.importXml(xml);
+							}
+						}
+					});
+
+					reader.readAsText(input.files[0]);
+				}
+			}));
+
+			input.click();
+		}));
+
+		mxResources.parse('additionalFeatures=추가 기능');
+		mxResources.parse('importXmlWithBackground=XML 가져오기 (배경 포함)');
 		
 		// Only visible in test mode
 		if (urlParams['test'] == '1')
@@ -2651,6 +2703,389 @@
 					dlg.init();
 				}, parent);
 			}
+
+			// 백그라운드 이미지와 XML 파일을 한번에 불러오는 기능
+			menu.addSeparator(parent);
+			
+			menu.addItem('백그라운드 + XML 가져오기...', null, function()
+			{
+				// 커스텀 다이얼로그 생성
+				var div = document.createElement('div');
+				div.style.cssText = 'position:absolute;top:0px;left:0px;right:0px;bottom:0px;background:rgba(0,0,0,0.5);z-index:1000;';
+				
+				var container = document.createElement('div');
+				container.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:white;border:1px solid #ccc;border-radius:5px;padding:20px;min-width:400px;box-shadow:0 4px 8px rgba(0,0,0,0.3);';
+				
+				var title = document.createElement('div');
+				title.style.cssText = 'font-size:16px;font-weight:bold;margin-bottom:15px;color:#333;';
+				title.innerHTML = '백그라운드 이미지와 XML 파일 가져오기';
+				
+				var content = document.createElement('div');
+				content.style.cssText = 'margin-bottom:20px;';
+				
+				// 이미지 파일 선택 영역
+				var imgSection = document.createElement('div');
+				imgSection.style.cssText = 'margin-bottom:15px;';
+				
+				var imgLabel = document.createElement('div');
+				imgLabel.style.cssText = 'margin-bottom:5px;font-weight:bold;color:#555;';
+				imgLabel.innerHTML = '백그라운드 이미지 파일:';
+				
+				var imgInput = document.createElement('input');
+				imgInput.setAttribute('type', 'file');
+				imgInput.setAttribute('accept', '.png,.jpg,.jpeg,.gif,.svg');
+				imgInput.style.cssText = 'width:100%;padding:8px;border:1px solid #ddd;border-radius:3px;box-sizing:border-box;';
+				
+				var imgFileInfo = document.createElement('div');
+				imgFileInfo.style.cssText = 'margin-top:5px;font-size:12px;color:#666;';
+				imgFileInfo.innerHTML = '지원 형식: PNG, JPG, JPEG, GIF, SVG';
+				
+				imgSection.appendChild(imgLabel);
+				imgSection.appendChild(imgInput);
+				imgSection.appendChild(imgFileInfo);
+				
+				// XML 파일 선택 영역
+				var xmlSection = document.createElement('div');
+				xmlSection.style.cssText = 'margin-bottom:15px;';
+				
+				var xmlLabel = document.createElement('div');
+				xmlLabel.style.cssText = 'margin-bottom:5px;font-weight:bold;color:#555;';
+				xmlLabel.innerHTML = 'XML 다이어그램 파일:';
+				
+				var xmlInput = document.createElement('input');
+				xmlInput.setAttribute('type', 'file');
+				xmlInput.setAttribute('accept', '.xml,.drawio');
+				xmlInput.style.cssText = 'width:100%;padding:8px;border:1px solid #ddd;border-radius:3px;box-sizing:border-box;';
+				
+				var xmlFileInfo = document.createElement('div');
+				xmlFileInfo.style.cssText = 'margin-top:5px;font-size:12px;color:#666;';
+				xmlFileInfo.innerHTML = '지원 형식: XML, DRAWIO';
+				
+				xmlSection.appendChild(xmlLabel);
+				xmlSection.appendChild(xmlInput);
+				xmlSection.appendChild(xmlFileInfo);
+				
+				content.appendChild(imgSection);
+				content.appendChild(xmlSection);
+				
+				// 버튼 영역
+				var buttonContainer = document.createElement('div');
+				buttonContainer.style.cssText = 'text-align:right;';
+				
+				var cancelBtn = document.createElement('button');
+				cancelBtn.innerHTML = '취소';
+				cancelBtn.style.cssText = 'padding:8px 16px;margin-right:10px;border:1px solid #ccc;background:#f5f5f5;border-radius:3px;cursor:pointer;';
+				
+				var importBtn = document.createElement('button');
+				importBtn.innerHTML = '가져오기';
+				importBtn.style.cssText = 'padding:8px 16px;border:1px solid #007cba;background:#007cba;color:white;border-radius:3px;cursor:pointer;';
+				importBtn.disabled = true;
+				
+				buttonContainer.appendChild(cancelBtn);
+				buttonContainer.appendChild(importBtn);
+				
+				container.appendChild(title);
+				container.appendChild(content);
+				container.appendChild(buttonContainer);
+				div.appendChild(container);
+				document.body.appendChild(div);
+				
+				// 파일 선택 상태 확인
+				function checkFiles()
+				{
+					if (imgInput.files.length > 0 && xmlInput.files.length > 0)
+					{
+						importBtn.disabled = false;
+						importBtn.style.background = '#007cba';
+					}
+					else
+					{
+						importBtn.disabled = true;
+						importBtn.style.background = '#ccc';
+					}
+				}
+				
+				imgInput.addEventListener('change', checkFiles);
+				xmlInput.addEventListener('change', checkFiles);
+				
+				// 취소 버튼
+				cancelBtn.onclick = function()
+				{
+					document.body.removeChild(div);
+				};
+				
+				// 가져오기 버튼
+				importBtn.onclick = function()
+				{
+					if (imgInput.files.length > 0 && xmlInput.files.length > 0)
+					{
+						var imgFile = imgInput.files[0];
+						var xmlFile = xmlInput.files[0];
+						
+						// 이미지 파일 읽기
+						var imgReader = new FileReader();
+						imgReader.onload = function(e)
+						{
+							var imgData = e.target.result;
+							
+							// 백그라운드 이미지 설정 - 더 안정적인 방법
+							try
+							{
+								// 이미지가 제대로 로드되었는지 확인
+								var img = new Image();
+								img.onload = function()
+								{
+									// 이미지가 로드되면 배경으로 설정 (리샘플링 포함)
+									console.log('이미지 로드 성공:', img.width, 'x', img.height);
+
+									// 2.5MB 기준(대략 base64 길이 3.5~4MB) 초과 시 축소
+									var MAX_BYTES = 2.5 * 1024 * 1024;
+									var needsResize = (typeof imgFile.size === 'number' ? imgFile.size > MAX_BYTES : (imgData.length * 0.75) > MAX_BYTES);
+
+									// 리샘플링 함수
+									function resizeIfNeeded(img) {
+									if (!needsResize) return { dataUrl: imgData, w: img.width, h: img.height };
+
+									var maxW = 2000; // 필요 시 조정
+									var maxH = 2000; // 필요 시 조정
+									var w = img.width, h = img.height;
+									var scale = Math.min(maxW / w, maxH / h, 1);
+									var cw = Math.max(1, Math.round(w * scale));
+									var ch = Math.max(1, Math.round(h * scale));
+
+									var canvas = document.createElement('canvas');
+									canvas.width = cw;
+									canvas.height = ch;
+
+									var ctx = canvas.getContext('2d');
+									ctx.imageSmoothingEnabled = true;
+									ctx.imageSmoothingQuality = 'high';
+									ctx.drawImage(img, 0, 0, cw, ch);
+
+									// JPEG 재인코딩으로 용량 절감(품질 0.85)
+									var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+									return { dataUrl: dataUrl, w: cw, h: ch };
+									}
+
+									try {
+									var out = resizeIfNeeded(img);
+
+									// 방법 1
+									editorUi.setBackgroundImage(new mxImage(out.dataUrl, out.w, out.h));
+
+									// 검증/강제 반영
+									editorUi.editor.graph.view.validateBackgroundImage();
+
+									// 확인 로그
+									var currentBg = editorUi.editor.graph.backgroundImage;
+									if (currentBg != null) {
+										console.log('백그라운드 이미지 확인됨:', currentBg.src, currentBg.width, currentBg.height);
+									} else {
+										// 방법 2 (직접 세팅)
+										editorUi.editor.graph.setBackgroundImage(new mxImage(out.dataUrl, out.w, out.h));
+										editorUi.editor.graph.view.validateBackgroundImage();
+									}
+									} catch (bgError) {
+									console.log('백그라운드 설정 오류:', bgError.message);
+									}
+									
+									// XML 파일 읽기
+									var xmlReader = new FileReader();
+									xmlReader.onload = function(e2)
+									{
+										var xmlContent = e2.target.result;
+										
+										// XML 내용 파싱 및 가져오기
+										try
+										{
+											// XML이 문자열로 들어온 경우 처리
+											var cleanXml = xmlContent.trim();
+											
+											// XML 파싱 시도
+											var doc = null;
+											try
+											{
+												doc = mxUtils.parseXml(cleanXml);
+											}
+											catch (parseError)
+											{
+												// 파싱 실패 시 문자열을 그대로 사용
+												console.log('XML 파싱 실패, 문자열로 처리:', parseError.message);
+												
+												// 문자열이 XML 형식이 아닌 경우 빈 그래프로 설정
+												if (!cleanXml.includes('<') || !cleanXml.includes('>'))
+												{
+													console.log('XML 형식이 아닌 문자열:', cleanXml.substring(0, 100));
+													graph.model.beginUpdate();
+													try
+													{
+																											graph.model.clear();
+													
+													// 백그라운드 이미지가 실제로 설정되었는지 확인
+													var bgSuccess = editorUi.editor.graph.backgroundImage != null;
+													if (bgSuccess)
+													{
+														editorUi.alert('백그라운드 이미지는 설정되었지만 XML 파일이 올바른 형식이 아닙니다.\n\nXML 파일: ' + xmlFile.name + '\n이미지 파일: ' + imgFile.name);
+													}
+													else
+													{
+														editorUi.alert('백그라운드 이미지와 XML 파일 모두 실패했습니다.\n\nXML 파일: ' + xmlFile.name + '\n이미지 파일: ' + imgFile.name);
+													}
+													}
+													finally
+													{
+														graph.model.endUpdate();
+													}
+													return;
+												}
+												
+												// XML 형식이지만 파싱에 실패한 경우 기본 구조로 감싸기
+												try
+												{
+													cleanXml = '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel>';
+													doc = mxUtils.parseXml(cleanXml);
+												}
+												catch (finalError)
+												{
+													console.log('최종 XML 파싱 실패:', finalError.message);
+													graph.model.beginUpdate();
+													try
+													{
+																											graph.model.clear();
+													
+													// 백그라운드 이미지가 실제로 설정되었는지 확인
+													var bgSuccess = editorUi.editor.graph.backgroundImage != null;
+													if (bgSuccess)
+													{
+														editorUi.alert('백그라운드 이미지는 설정되었지만 XML 파일을 처리할 수 없습니다.\n\nXML 파일: ' + xmlFile.name + '\n이미지 파일: ' + imgFile.name);
+													}
+													else
+													{
+														editorUi.alert('백그라운드 이미지와 XML 파일 모두 실패했습니다.\n\nXML 파일: ' + xmlFile.name + '\n이미지 파일: ' + imgFile.name);
+													}
+													}
+													finally
+													{
+														graph.model.endUpdate();
+													}
+													return;
+												}
+											}
+											
+											var root = doc.documentElement;
+											
+											if (root.nodeName == 'mxfile')
+											{
+												var diagrams = root.getElementsByTagName('diagram');
+												if (diagrams.length > 0)
+												{
+													// draw.io 내장 유틸로 diagram 텍스트(압축/인코딩) 해제 → mxGraphModel 노드
+													var node = Editor.parseDiagramNode(diagrams[0]);
+													// 안전하게 그래프에 반영(setGraphXml 경유)
+													editorUi.decodeNodeIntoGraph(node, editorUi.editor.graph);
+											
+													var bgSuccess = editorUi.editor.graph.backgroundImage != null;
+													if (bgSuccess)
+													{
+														editorUi.alert('백그라운드 이미지와 XML 파일이 성공적으로 가져와졌습니다.\n\nXML 파일: ' + xmlFile.name + '\n이미지 파일: ' + imgFile.name);
+													}
+													else
+													{
+														editorUi.alert('XML 파일은 성공적으로 가져왔지만 백그라운드 이미지 설정에 실패했습니다.\n\nXML 파일: ' + xmlFile.name + '\n이미지 파일: ' + imgFile.name);
+													}
+												}
+											}
+											else if (root.nodeName == 'mxGraphModel')
+											{
+												// root 그대로 반영하는 대신 공용 추출 + 디코드 사용
+												var node = editorUi.editor.extractGraphModel(root, true);
+												editorUi.decodeNodeIntoGraph(node, editorUi.editor.graph);
+
+												var bgSuccess = editorUi.editor.graph.backgroundImage != null;
+												if (bgSuccess)
+												{
+													editorUi.alert('백그라운드 이미지와 XML 파일이 성공적으로 가져와졌습니다.\n\nXML 파일: ' + xmlFile.name + '\n이미지 파일: ' + imgFile.name);
+												}
+												else
+												{
+													editorUi.alert('XML 파일은 성공적으로 가져왔지만 백그라운드 이미지 설정에 실패했습니다.\n\nXML 파일: ' + xmlFile.name + '\n이미지 파일: ' + imgFile.name);
+												}
+											}
+											else
+											{
+												// 기타(루트가 mxfile/mxGraphModel가 아닌 경우)도 공용 추출 시도 후 실패 시 폴백
+												var node = editorUi.editor.extractGraphModel(doc.documentElement, true);
+												if (node != null)
+												{
+													editorUi.decodeNodeIntoGraph(node, editorUi.editor.graph);
+												}
+												else
+												{
+													editorUi.importFile(xmlContent, 'text/xml', 0, 0, 0, 0, xmlFile.name, function(cells)
+													{
+														var bgSuccess = editorUi.editor.graph.backgroundImage != null;
+														if (bgSuccess)
+														{
+															editorUi.alert('백그라운드 이미지와 XML 파일이 성공적으로 가져와졌습니다.\n\nXML 파일: ' + xmlFile.name + '\n이미지 파일: ' + imgFile.name);
+														}
+														else
+														{
+															editorUi.alert('XML 파일은 성공적으로 가져왔지만 백그라운드 이미지 설정에 실패했습니다.\n\nXML 파일: ' + xmlFile.name + '\n이미지 파일: ' + imgFile.name);
+														}
+													});
+												}
+											}
+										}
+										catch (error)
+										{
+											console.log('XML 처리 중 오류:', error.message);
+											// 백그라운드 이미지가 실제로 설정되었는지 확인
+											var bgSuccess = editorUi.editor.graph.backgroundImage != null;
+											if (bgSuccess)
+											{
+												editorUi.alert('백그라운드 이미지는 설정되었지만 XML 파일 처리에 실패했습니다.\n\n오류: ' + error.message + '\n\nXML 파일: ' + xmlFile.name + '\n이미지 파일: ' + imgFile.name);
+											}
+											else
+											{
+												editorUi.alert('백그라운드 이미지와 XML 파일 모두 실패했습니다.\n\n오류: ' + error.message + '\n\nXML 파일: ' + xmlFile.name + '\n이미지 파일: ' + imgFile.name);
+											}
+										}
+										
+										// 다이얼로그 닫기
+										document.body.removeChild(div);
+									};
+									xmlReader.readAsText(xmlFile);
+								};
+								img.onerror = function()
+								{
+									// 이미지 로드 실패 시
+									editorUi.alert('이미지 파일을 로드할 수 없습니다: ' + imgFile.name);
+									document.body.removeChild(div);
+								};
+								img.src = imgData;
+							}
+							catch (imgError)
+							{
+								console.log('이미지 설정 오류:', imgError.message);
+								editorUi.alert('이미지 설정에 실패했습니다: ' + imgError.message);
+								document.body.removeChild(div);
+							}
+						};
+						imgReader.readAsDataURL(imgFile);
+					}
+				};
+				
+				// ESC 키로 다이얼로그 닫기
+				var keyHandler = function(evt)
+				{
+					if (evt.keyCode == 27) // ESC
+					{
+						document.body.removeChild(div);
+						document.removeEventListener('keydown', keyHandler);
+					}
+				};
+				document.addEventListener('keydown', keyHandler);
+			}, parent);
 		}));
 		
 		if (Editor.enableCustomLibraries)

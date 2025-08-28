@@ -1288,7 +1288,9 @@ Actions.prototype.init = function()
 		}
 		else
 		{
-			this.layersWindow.window.setVisible(!this.layersWindow.window.isVisible());
+			this.layersWindow = new LayersWindow(ui, document.body.offsetWidth - 280, 120, 220, 180);
+			this.layersWindow.window.setVisible(true);
+			// this.layersWindow.window.setVisible(!this.layersWindow.window.isVisible());
 		}
 	}), null, null, Editor.ctrlKey + '+Shift+L');
 	action.setToggleAction(true);

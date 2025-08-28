@@ -10440,8 +10440,8 @@
 	 */
 	EditorUi.prototype.showLayersDialog = function()
 	{
-		if (this.editor.graph.getModel().getChildCount(this.editor.graph.getModel().getRoot()) > 1)
-		{
+		//if (this.editor.graph.getModel().getChildCount(this.editor.graph.getModel().getRoot()) > 1)
+		//{
 			if (this.actions.layersWindow == null)
 			{
 				this.actions.get('layers').funct();
@@ -10450,7 +10450,7 @@
 			{
 				this.actions.layersWindow.window.setVisible(true);
 			}
-		}
+		//}
 	};
 
 	/**
