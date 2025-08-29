@@ -2585,6 +2585,171 @@ var LayersWindow = function(editorUi, x, y, w, h)
 				mxEvent.consume(evt);
 			});
 
+			// 레이어 선택 체크박스와 투명도 조절 컨테이너 추가
+			var layerControlsContainer = document.createElement('div');
+			layerControlsContainer.style.display = 'inline-block';
+			layerControlsContainer.style.marginLeft = '4px';
+			layerControlsContainer.style.marginRight = '6px';
+			layerControlsContainer.style.marginTop = '2px';
+			layerControlsContainer.style.verticalAlign = 'top';
+			
+			// 레이어 선택 체크박스
+			var selectCheckbox = document.createElement('input');
+			selectCheckbox.setAttribute('type', 'checkbox');
+			selectCheckbox.style.verticalAlign = 'middle';
+			selectCheckbox.style.cursor = 'pointer';
+			selectCheckbox.style.marginRight = '4px';
+			selectCheckbox.setAttribute('title', '레이어 내 모든 객체 선택');
+			
+			// 투명도 조절 input
+			var opacityInput = document.createElement('input');
+			opacityInput.setAttribute('type', 'number');
+			opacityInput.setAttribute('min', '10');
+			opacityInput.setAttribute('max', '100');
+			opacityInput.setAttribute('value', '100');
+			opacityInput.style.width = '40px';
+			opacityInput.style.height = '16px';
+			opacityInput.style.fontSize = '10px';
+			opacityInput.style.verticalAlign = 'middle';
+			opacityInput.style.textAlign = 'center';
+			opacityInput.setAttribute('title', '레이어 투명도 (10-100%)');
+			
+			// % 표시
+			var percentLabel = document.createElement('span');
+			percentLabel.textContent = '%';
+			percentLabel.style.fontSize = '10px';
+			percentLabel.style.marginLeft = '1px';
+			percentLabel.style.color = '#666';
+			
+			layerControlsContainer.appendChild(selectCheckbox);
+			layerControlsContainer.appendChild(opacityInput);
+			layerControlsContainer.appendChild(percentLabel);
+			left.appendChild(layerControlsContainer);
+
+			// 현재 레이어의 투명도 가져오기
+			var currentOpacity = 100;
+			var descendants = graph.model.getDescendants(child);
+			if (descendants.length > 0)
+			{
+				var firstCell = descendants[0];
+				var state = graph.view.getState(firstCell);
+				if (state != null && state.style != null)
+				{
+					// 여러 투명도 속성 중에서 값을 가져옴
+					var opacity = mxUtils.getValue(state.style, 'fillOpacity', 
+						mxUtils.getValue(state.style, 'strokeOpacity', 
+						mxUtils.getValue(state.style, 'opacity', '1')));
+					
+					// opacity 값을 파싱
+					var opacityValue = parseFloat(opacity);
+					if (!isNaN(opacityValue))
+					{
+						// 값이 1보다 크면 이미 퍼센트 단위로 저장된 것
+						if (opacityValue > 1) {
+							currentOpacity = Math.round(opacityValue);
+						} else {
+							// 0-1 범위를 0-100 범위로 변환
+							currentOpacity = Math.round(opacityValue * 100);
+						}
+					}
+				}
+			}
+			// 최소값 10% 보장
+			if (currentOpacity < 10) currentOpacity = 10;
+			opacityInput.setAttribute('value', currentOpacity);
+
+			// 레이어 선택 체크박스 이벤트
+			mxEvent.addListener(selectCheckbox, 'click', function(evt)
+			{
+				if (graph.isEnabled())
+				{
+					var descendants = graph.model.getDescendants(child);
+					var selectableCells = [];
+					
+					// 선택 가능한 셀들만 필터링 (엣지 제외)
+					for (var i = 0; i < descendants.length; i++)
+					{
+						var cell = descendants[i];
+						if (graph.isCellSelectable(cell) && !graph.model.isEdge(cell))
+						{
+							selectableCells.push(cell);
+						}
+					}
+					
+					if (selectableCells.length > 0)
+					{
+						// 현재 선택된 셀들과 비교하여 토글 동작
+						var currentSelection = graph.getSelectionCells();
+						var allSelected = true;
+						
+						for (var j = 0; j < selectableCells.length; j++)
+						{
+							if (mxUtils.indexOf(currentSelection, selectableCells[j]) < 0)
+							{
+								allSelected = false;
+								break;
+							}
+						}
+						
+						if (allSelected && selectableCells.length > 0)
+						{
+							// 모든 셀이 선택되어 있으면 선택 해제
+							for (var k = 0; k < selectableCells.length; k++)
+							{
+								var index = mxUtils.indexOf(currentSelection, selectableCells[k]);
+								if (index >= 0)
+								{
+									currentSelection.splice(index, 1);
+								}
+							}
+							graph.setSelectionCells(currentSelection);
+						}
+						else
+						{
+							// 모든 셀 선택
+							graph.setSelectionCells(selectableCells);
+						}
+					}
+				}
+				mxEvent.consume(evt);
+			});
+
+			// 투명도 조절 input 이벤트
+			mxEvent.addListener(opacityInput, 'input', function(evt)
+			{
+				if (graph.isEnabled())
+				{
+					var inputValue = parseFloat(opacityInput.value);
+					
+					// 값 범위 제한
+					if (isNaN(inputValue) || inputValue < 10) inputValue = 10;
+					if (inputValue > 100) inputValue = 100;
+					
+					// 퍼센트 값을 그대로 저장 (draw.io가 퍼센트 단위로 저장하는 것 같음)
+					var opacityValue = inputValue;
+					var descendants = graph.model.getDescendants(child);
+					
+					graph.model.beginUpdate();
+					try
+					{
+						for (var i = 0; i < descendants.length; i++)
+						{
+							var cell = descendants[i];
+							// 투명도 설정 - 퍼센트 값을 그대로 저장
+							graph.setCellStyles('fillOpacity', opacityValue.toString(), [cell]);
+							graph.setCellStyles('strokeOpacity', opacityValue.toString(), [cell]);
+							graph.setCellStyles('opacity', opacityValue.toString(), [cell]);
+						}
+					}
+					finally
+					{
+						graph.model.endUpdate();
+						// 그래프 강제 다시 그리기
+						graph.refresh();
+					}
+				}
+			});
+
 			mxUtils.write(left, label);
 			ldiv.appendChild(left);
 			
