@@ -1191,8 +1191,7 @@ Actions.prototype.init = function()
 	    		value = state.style[mxConstants.STYLE_IMAGE] || value;
 	    	}
 	    	
-	    	var selectionState = graph.cellEditor.saveSelection();
-	    	
+	    	var selectionState = graph.cellEditor.saveSelection()
 	    	ui.showImageDialog(title, value, function(newValue, w, h)
 			{
 	    		// Inserts image into HTML text
