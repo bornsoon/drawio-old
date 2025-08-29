@@ -86,7 +86,15 @@
 					'Indicator (Function)', null, null, this.getTagsForStencil(gn, 'indicator', dt + 'indicator function').join(' ')),
 			this.createVertexTemplateEntry(s2 + 'inst.indicator;mounting=room;overflow=fill;indType=plc', 50, 100,  
 					'<table cellpadding="0" cellspacing="0" style="font-size:1em;width:100%;height:100%;"><tr><td align="center" height="25">TI</td></tr><tr><td align="center" height="25">##</td></tr><tr><td align="center" valign="bottom"></td></tr></table>', 
-					'Indicator (PLC)', null, null, this.getTagsForStencil(gn, 'indicator', dt + 'indicator plc programmable logic control').join(' '))
+					'Indicator (PLC)', null, null, this.getTagsForStencil(gn, 'indicator', dt + 'indicator plc programmable logic control').join(' ')),
+			
+			// 테스트용 심볼 추가 - instruments.xml의 심볼 사용
+			this.createVertexTemplateEntry('html=1;outlineConnect=0;align=center;dashed=0;aspect=fixed;' + mxConstants.STYLE_SHAPE + "=mxgraph.pid.instruments;shape=Test Instrument", 50, 50, 
+					'<table cellpadding="4" cellspacing="0" border="0" style="font-size:1em;width:100%;height:100%;">' +
+		    		'<tr><td>TEST</td></tr><tr><td>##</td></table> ', 'Test Instrument', null, null, this.getTagsForStencil(gn, 'test', dt + 'test instrument').join(' ')),
+			this.createVertexTemplateEntry('html=1;outlineConnect=0;align=center;dashed=0;aspect=fixed;' + mxConstants.STYLE_SHAPE + "=mxgraph.pid.instruments;shape=Simple Test", 50, 50, 
+					'<table cellpadding="4" cellspacing="0" border="0" style="font-size:1em;width:100%;height:100%;">' +
+		    		'<tr><td>SIMPLE</td></tr><tr><td>##</td></table> ', 'Simple Test', null, null, this.getTagsForStencil(gn, 'simple', dt + 'simple test').join(' '))
 		]);
 	};
 	

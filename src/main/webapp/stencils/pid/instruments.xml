@@ -568,4 +568,55 @@
 <text str="TT" x="48" y="68" align="center" valign="bottom"/>
 </foreground>
 </shape>
+
+<!-- 테스트용 심볼: 텍스트를 도형 속성으로 설정 -->
+<shape name="Test Instrument" h="96" w="96" aspect="fixed" strokewidth="inherit">
+<connections>
+<constraint x="0.5" y="0" perimeter="0" name="N"/>
+<constraint x="0.5" y="1" perimeter="0" name="S"/>
+<constraint x="0" y="0.5" perimeter="0" name="W"/>
+<constraint x="1" y="0.5" perimeter="0" name="E"/>
+<constraint x="0.145" y="0.145" perimeter="0" name="NW"/>
+<constraint x="0.145" y="0.855" perimeter="0" name="SW"/>
+<constraint x="0.855" y="0.145" perimeter="0" name="NE"/>
+<constraint x="0.855" y="0.855" perimeter="0" name="SE"/>
+</connections>
+<background>
+<ellipse x="0" y="0" w="96" h="96"/>
+</background>
+<foreground>
+<fillstroke/>
+<fontcolor color="#000000"/>
+<fontsize size="20"/>
+<text str="TEST" x="48" y="43" align="center" valign="bottom"/>
+<path>
+<move x="0" y="48"/>
+<line x="96" y="48"/>
+</path>
+<stroke/>
+</foreground>
+</shape>
+
+<!-- 간단한 테스트 심볼: 텍스트만 있는 원형 -->
+<shape name="Simple Test" h="96" w="96" aspect="fixed" strokewidth="inherit">
+<connections>
+<constraint x="0.5" y="0" perimeter="0" name="N"/>
+<constraint x="0.5" y="1" perimeter="0" name="S"/>
+<constraint x="0" y="0.5" perimeter="0" name="W"/>
+<constraint x="1" y="0.5" perimeter="0" name="E"/>
+<constraint x="0.145" y="0.145" perimeter="0" name="NW"/>
+<constraint x="0.145" y="0.855" perimeter="0" name="SW"/>
+<constraint x="0.855" y="0.145" perimeter="0" name="NE"/>
+<constraint x="0.855" y="0.855" perimeter="0" name="SE"/>
+</connections>
+<background>
+<ellipse x="0" y="0" w="96" h="96"/>
+</background>
+<foreground>
+<fillstroke/>
+<fontcolor color="#000000"/>
+<fontsize size="40"/>
+<text str="SIMPLE" x="48" y="68" align="center" valign="bottom"/>
+</foreground>
+</shape>
 </shapes>
