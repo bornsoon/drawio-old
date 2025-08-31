@@ -248,6 +248,234 @@ window.addEventListener('load', function() {
                     }
                 };
                 
+                // 도형 교체 기능을 위한 전역 변수
+                var selectedCellForReplacement = null;
+                var replacementCell = null;
+                
+                // 도형 교체 함수
+                function replaceShape(targetCell, newShapeStyle) {
+                    if (targetCell == null || !graph.getModel().isVertex(targetCell)) {
+                        console.log('교체할 수 있는 도형이 선택되지 않았습니다.');
+                        return;
+                    }
+                    
+                    graph.getModel().beginUpdate();
+                    try {
+                        // 기존 도형의 정보 저장
+                        var oldGeometry = graph.getModel().getGeometry(targetCell);
+                        var oldValue = graph.getModel().getValue(targetCell);
+                        var oldParent = graph.getModel().getParent(targetCell);
+                        var oldConnections = graph.getModel().getEdges(targetCell);
+                        
+                        // 새 도형 생성
+                        var newCell = graph.insertVertex(
+                            oldParent,
+                            null,
+                            oldValue,
+                            oldGeometry.x,
+                            oldGeometry.y,
+                            oldGeometry.width,
+                            oldGeometry.height,
+                            newShapeStyle
+                        );
+                        
+                        // 기존 연결선들을 새 도형으로 재연결
+                        if (oldConnections != null) {
+                            for (var i = 0; i < oldConnections.length; i++) {
+                                var edge = oldConnections[i];
+                                var source = graph.getModel().getTerminal(edge, true);
+                                var target = graph.getModel().getTerminal(edge, false);
+                                
+                                if (source == targetCell) {
+                                    graph.getModel().setTerminal(edge, newCell, true);
+                                }
+                                if (target == targetCell) {
+                                    graph.getModel().setTerminal(edge, newCell, false);
+                                }
+                            }
+                        }
+                        
+                        // 기존 도형 삭제
+                        graph.removeCells([targetCell]);
+                        
+                        // 새 도형 선택
+                        graph.setSelectionCell(newCell);
+                        
+                        console.log('도형이 성공적으로 교체되었습니다.');
+                        console.log('새 도형 ID:', newCell.getId());
+                        console.log('새 도형 스타일:', newShapeStyle);
+                        
+                    } finally {
+                        graph.getModel().endUpdate();
+                    }
+                }
+                
+                // 도형 교체 UI 생성
+                function createReplacementUI() {
+                    var replacementDiv = document.createElement('div');
+                    replacementDiv.style.background = '#ffffff';
+                    replacementDiv.style.border = '1px solid #ccc';
+                    replacementDiv.style.borderRadius = '4px';
+                    replacementDiv.style.position = 'fixed';
+                    replacementDiv.style.padding = '15px';
+                    replacementDiv.style.width = '300px';
+                    replacementDiv.style.height = '200px';
+                    replacementDiv.style.top = '500px';
+                    replacementDiv.style.right = '20px';
+                    replacementDiv.style.zIndex = '1000';
+                    replacementDiv.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+                    replacementDiv.style.fontFamily = 'Arial, sans-serif';
+                    replacementDiv.style.fontSize = '12px';
+                    
+                    // Chromeless 모드가 아닌 경우 위치 조정
+                    if (!ui.editor.isChromelessView()) {
+                        replacementDiv.style.top = '520px';
+                        replacementDiv.style.right = '280px';
+                    }
+                    
+                    replacementDiv.innerHTML = `
+                        <h3 style="margin:0 0 10px 0;color:#666;">도형 교체</h3>
+                        <div style="margin-bottom:10px;">
+                            <label style="display:block;margin-bottom:5px;font-weight:bold;color:#555;">새 도형 스타일:</label>
+                            <select id="newShapeStyle" style="width:100%;padding:5px;border:1px solid #ddd;border-radius:3px;">
+                                <option value="ellipse">원형</option>
+                                <option value="rectangle">사각형</option>
+                                <option value="rounded=1">둥근 사각형</option>
+                                <option value="rhombus">다이아몬드</option>
+                                <option value="triangle">삼각형</option>
+                                <option value="hexagon">육각형</option>
+                                <option value="cylinder">실린더</option>
+                                <option value="actor">액터</option>
+                                <option value="cloud">구름</option>
+                                <option value="star">별</option>
+                                <option value="parallelogram">평행사변형</option>
+                                <option value="trapezoid">사다리꼴</option>
+                                <option value="octagon">팔각형</option>
+                                <option value="cross">십자가</option>
+                                <option value="cube">큐브</option>
+                                <option value="note">노트</option>
+                                <option value="document">문서</option>
+                                <option value="database">데이터베이스</option>
+                                <option value="process">프로세스</option>
+                                <option value="decision">결정</option>
+                                <option value="terminator">시작/종료</option>
+                                <option value="data">데이터</option>
+                                <option value="input">입력</option>
+                                <option value="output">출력</option>
+                                <option value="storage">저장소</option>
+                                <option value="display">디스플레이</option>
+                                <option value="manual">수동</option>
+                                <option value="preparation">준비</option>
+                                <option value="loop">반복</option>
+                                <option value="connector">연결자</option>
+                                <option value="offpage">페이지 외부</option>
+                                <option value="summing">합산</option>
+                                <option value="or">OR</option>
+                                <option value="xor">XOR</option>
+                                <option value="sort">정렬</option>
+                                <option value="extract">추출</option>
+                                <option value="merge">병합</option>
+                                <option value="internal">내부</option>
+                                <option value="external">외부</option>
+                                <option value="card">카드</option>
+                                <option value="tape">테이프</option>
+                                <option value="punched">천공</option>
+                                <option value="display">표시</option>
+                                <option value="delay">지연</option>
+                                <option value="manual">수동</option>
+                                <option value="preparation">준비</option>
+                                <option value="loop">반복</option>
+                                <option value="connector">연결자</option>
+                                <option value="offpage">페이지 외부</option>
+                                <option value="summing">합산</option>
+                                <option value="or">OR</option>
+                                <option value="xor">XOR</option>
+                                <option value="sort">정렬</option>
+                                <option value="extract">추출</option>
+                                <option value="merge">병합</option>
+                                <option value="internal">내부</option>
+                                <option value="external">외부</option>
+                                <option value="card">카드</option>
+                                <option value="tape">테이프</option>
+                                <option value="punched">천공</option>
+                                <option value="display">표시</option>
+                                <option value="delay">지연</option>
+                            </select>
+                        </div>
+                        <button id="replaceShapeBtn" style="width:100%;padding:8px;background:#007acc;color:white;border:none;border-radius:3px;cursor:pointer;margin-bottom:10px;">
+                            도형 교체 (Ctrl+R)
+                        </button>
+                        <div id="replacementStatus" style="color:#666;font-size:11px;"></div>
+                        <div style="margin-top:10px;font-size:10px;color:#999;">
+                            <strong>단축키:</strong><br>
+                            Ctrl+R: 선택된 도형을 현재 선택된 스타일로 교체<br>
+                            Ctrl+1~9: 빠른 도형 교체 (1=원형, 2=사각형, 3=다이아몬드 등)
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(replacementDiv);
+                    
+                    // 교체 버튼 이벤트
+                    document.getElementById('replaceShapeBtn').addEventListener('click', function() {
+                        var selectedCell = graph.getSelectionCell();
+                        var newStyle = document.getElementById('newShapeStyle').value;
+                        
+                        if (selectedCell != null && graph.getModel().isVertex(selectedCell)) {
+                            replaceShape(selectedCell, newStyle);
+                            document.getElementById('replacementStatus').innerHTML = '도형이 교체되었습니다!';
+                            setTimeout(function() {
+                                document.getElementById('replacementStatus').innerHTML = '';
+                            }, 2000);
+                        } else {
+                            document.getElementById('replacementStatus').innerHTML = '교체할 도형을 선택해주세요.';
+                        }
+                    });
+                    
+                    // 키보드 단축키 설정
+                    var quickShapes = [
+                        'ellipse',      // 1
+                        'rectangle',    // 2
+                        'rhombus',      // 3
+                        'triangle',     // 4
+                        'hexagon',      // 5
+                        'cylinder',     // 6
+                        'actor',        // 7
+                        'cloud',        // 8
+                        'star'          // 9
+                    ];
+                    
+                    // 키보드 이벤트 리스너 추가
+                    document.addEventListener('keydown', function(event) {
+                        var selectedCell = graph.getSelectionCell();
+                        
+                        if (selectedCell != null && graph.getModel().isVertex(selectedCell)) {
+                            // Ctrl+R: 현재 선택된 스타일로 교체
+                            if (event.ctrlKey && event.key === 'r') {
+                                event.preventDefault();
+                                var newStyle = document.getElementById('newShapeStyle').value;
+                                replaceShape(selectedCell, newStyle);
+                                document.getElementById('replacementStatus').innerHTML = '도형이 교체되었습니다! (Ctrl+R)';
+                                setTimeout(function() {
+                                    document.getElementById('replacementStatus').innerHTML = '';
+                                }, 2000);
+                            }
+                            // Ctrl+1~9: 빠른 도형 교체
+                            else if (event.ctrlKey && event.key >= '1' && event.key <= '9') {
+                                event.preventDefault();
+                                var index = parseInt(event.key) - 1;
+                                if (index < quickShapes.length) {
+                                    var newStyle = quickShapes[index];
+                                    replaceShape(selectedCell, newStyle);
+                                    document.getElementById('replacementStatus').innerHTML = '도형이 교체되었습니다! (Ctrl+' + event.key + ')';
+                                    setTimeout(function() {
+                                        document.getElementById('replacementStatus').innerHTML = '';
+                                    }, 2000);
+                                }
+                            }
+                        }
+                    });
+                }
+                
                 // 선택 변경 이벤트 리스너
                 graph.getSelectionModel().addListener(mxEvent.CHANGE, function(sender, evt)
                 {
@@ -319,6 +547,9 @@ window.addEventListener('load', function() {
                     
                     updatePropertiesPanel(cell);
                 });
+                
+                // 도형 교체 UI 생성
+                createReplacementUI();
                 
                 // 셀 추가 이벤트 리스너
                 graph.addListener(mxEvent.CELLS_ADDED, function(sender, evt)
