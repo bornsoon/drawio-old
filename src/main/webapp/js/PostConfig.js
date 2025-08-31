@@ -96,9 +96,23 @@ window.addEventListener('load', function() {
                     propertyInputs = {};
                     
                     // 기본 속성들
-                    var defaultProps = ['label', 'tooltip', 'placeholders'];
+                    var defaultProps = ['label', 'tooltip', 'placeholders', 'height'];
                     
-                    // 기존 속성들 표시
+                    // 기본 속성들 표시 (편집 가능)
+                    for (var i = 0; i < defaultProps.length; i++)
+                    {
+                        var propName = defaultProps[i];
+                        var propValue = '';
+                        
+                        if (mxUtils.isNode(value))
+                        {
+                            propValue = value.getAttribute(propName) || '';
+                        }
+                        
+                        content += createPropertyField(propName, propValue, cell);
+                    }
+                    
+                    // 기존 속성들 표시 (기본 속성 제외)
                     for (var i = 0; i < attrs.length; i++)
                     {
                         var attrName = attrs[i].nodeName;
@@ -131,10 +145,24 @@ window.addEventListener('load', function() {
                     for (var propName in propertyInputs)
                     {
                         var input = propertyInputs[propName];
-                        input.onchange = function()
-                        {
-                            updateCellProperty(cell, propName, this.value);
-                        };
+                        if (input != null) {
+                            // 기존 이벤트 리스너 제거
+                            input.onchange = null;
+                            input.onblur = null;
+                            
+                            // 새로운 이벤트 리스너 추가
+                            input.onchange = function(propName) {
+                                return function() {
+                                    updateCellProperty(cell, propName, this.value);
+                                };
+                            }(propName);
+                            
+                            input.onblur = function(propName) {
+                                return function() {
+                                    updateCellProperty(cell, propName, this.value);
+                                };
+                            }(propName);
+                        }
                     }
                 }
                 
@@ -150,17 +178,30 @@ window.addEventListener('load', function() {
                     content += '<button onclick="removeProperty(\'' + name + '\', \'' + cell.getId() + '\')" style="background:#f44336;color:white;border:none;padding:3px 6px;border-radius:2px;cursor:pointer;font-size:10px;margin-left:5px;">Remove</button>';
                     content += '</div>';
                     
-                    // 입력 필드 저장
+                    // 입력 필드 저장 및 이벤트 리스너 추가
                     setTimeout(function()
                     {
                         var input = document.getElementById(fieldId);
                         if (input != null)
                         {
                             propertyInputs[name] = input;
-                            input.onchange = function()
-                            {
-                                updateCellProperty(cell, name, this.value);
-                            };
+                            
+                            // 기존 이벤트 리스너 제거
+                            input.onchange = null;
+                            input.onblur = null;
+                            
+                            // 새로운 이벤트 리스너 추가
+                            input.onchange = function(name) {
+                                return function() {
+                                    updateCellProperty(cell, name, this.value);
+                                };
+                            }(name);
+                            
+                            input.onblur = function(name) {
+                                return function() {
+                                    updateCellProperty(cell, name, this.value);
+                                };
+                            }(name);
                         }
                     }, 0);
                     
@@ -218,10 +259,11 @@ window.addEventListener('load', function() {
                         // 셀 값 업데이트
                         graph.getModel().setValue(cell, value);
                         
-                        // label 속성이 변경된 경우 셀 라벨도 업데이트
+                        // label 속성이 변경된 경우 셀 라벨도 업데이트하되, XML 속성은 유지
                         if (propName === 'label')
                         {
-                            graph.getModel().setValue(cell, propValue);
+                            // XML 속성은 그대로 두고 셀 라벨만 업데이트
+                            graph.getModel().setValue(cell, value);
                         }
                     }
                     finally
@@ -278,6 +320,26 @@ window.addEventListener('load', function() {
                             oldGeometry.height,
                             newShapeStyle
                         );
+                        
+                        // 특정 도형에 기본 속성 추가 (예시: cylinder에 height: 100 추가)
+                        if (newShapeStyle === 'cylinder') {
+                            var value = graph.getModel().getValue(newCell);
+                            
+                            // XML 노드가 아니면 생성
+                            if (!mxUtils.isNode(value)) {
+                                var doc = mxUtils.createXmlDocument();
+                                var obj = doc.createElement('object');
+                                obj.setAttribute('label', value || '');
+                                value = obj;
+                            }
+                            
+                            // height 속성을 XML 속성으로 추가 (Properties 패널에서 편집 가능)
+                            value.setAttribute('height', '100');
+                            graph.getModel().setValue(newCell, value);
+                            
+                            console.log('Cylinder 도형에 기본 속성 height: 100이 추가되었습니다.');
+                            console.log('이제 Properties 패널에서 height 값을 직접 수정할 수 있습니다.');
+                        }
                         
                         // 기존 연결선들을 새 도형으로 재연결
                         if (oldConnections != null) {
@@ -409,7 +471,9 @@ window.addEventListener('load', function() {
                         <div style="margin-top:10px;font-size:10px;color:#999;">
                             <strong>단축키:</strong><br>
                             Ctrl+R: 선택된 도형을 현재 선택된 스타일로 교체<br>
-                            Ctrl+1~9: 빠른 도형 교체 (1=원형, 2=사각형, 3=다이아몬드 등)
+                            Ctrl+1~9: 빠른 도형 교체 (1=원형, 2=사각형, 3=다이아몬드 등)<br><br>
+                            <strong>기본 속성:</strong><br>
+                            • Cylinder: height=100 (Properties 패널에서 편집 가능)
                         </div>
                     `;
                     
@@ -575,11 +639,17 @@ window.addEventListener('load', function() {
                     var cell = graph.getSelectionCell();
                     if (cell != null)
                     {
-                        // 속성창 새로고침 (입력 중인 필드는 유지)
+                        // 속성창 새로고침을 지연시켜 입력 중인 필드가 깜빡이지 않도록 함
                         setTimeout(function()
                         {
+                            // 현재 포커스된 입력 필드가 있으면 업데이트하지 않음
+                            var activeElement = document.activeElement;
+                            if (activeElement && activeElement.tagName === 'INPUT' && 
+                                activeElement.id && activeElement.id.startsWith('prop_')) {
+                                return;
+                            }
                             updatePropertiesPanel(cell);
-                        }, 50);
+                        }, 100);
                     }
                 });
             });
