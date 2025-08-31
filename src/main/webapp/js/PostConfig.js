@@ -252,6 +252,71 @@ window.addEventListener('load', function() {
                 graph.getSelectionModel().addListener(mxEvent.CHANGE, function(sender, evt)
                 {
                     var cell = graph.getSelectionCell();
+                    var selectedCells = graph.getSelectionCells();
+                    
+                    // 선택된 객체 정보를 콘솔에 출력
+                    if (selectedCells != null && selectedCells.length > 0) {
+                        console.log('=== 선택된 객체 정보 ===');
+                        console.log('선택된 객체 수:', selectedCells.length);
+                        
+                        if (selectedCells.length === 1) {
+                            // 단일 객체 선택
+                            var cell = selectedCells[0];
+                            console.log('Cell ID:', cell.getId());
+                            console.log('Cell Type:', graph.getModel().isVertex(cell) ? 'Vertex' : 'Edge');
+                            console.log('Cell Value:', graph.getModel().getValue(cell));
+                            console.log('Cell Style:', graph.getModel().getStyle(cell));
+                            console.log('Cell Geometry:', graph.getModel().getGeometry(cell));
+                            
+                            // 셀의 모든 속성 출력
+                            var value = graph.getModel().getValue(cell);
+                            if (mxUtils.isNode(value)) {
+                                console.log('Cell Attributes:');
+                                for (var i = 0; i < value.attributes.length; i++) {
+                                    var attr = value.attributes[i];
+                                    console.log('  ' + attr.name + ': ' + attr.value);
+                                }
+                            }
+                            
+                            // 부모 셀 정보
+                            var parent = graph.getModel().getParent(cell);
+                            if (parent != null) {
+                                console.log('Parent Cell ID:', parent.getId());
+                            }
+                            
+                            // 자식 셀들 정보
+                            var children = graph.getModel().getChildren(cell);
+                            if (children != null && children.length > 0) {
+                                console.log('Child Cells:', children.length);
+                                for (var i = 0; i < children.length; i++) {
+                                    console.log('  Child ' + i + ' ID:', children[i].getId());
+                                }
+                            }
+                            
+                            // 연결된 엣지들 정보
+                            var edges = graph.getModel().getEdges(cell);
+                            if (edges != null && edges.length > 0) {
+                                console.log('Connected Edges:', edges.length);
+                                for (var i = 0; i < edges.length; i++) {
+                                    console.log('  Edge ' + i + ' ID:', edges[i].getId());
+                                }
+                            }
+                        } else {
+                            // 다중 객체 선택
+                            console.log('다중 선택된 객체들:');
+                            for (var i = 0; i < selectedCells.length; i++) {
+                                var cell = selectedCells[i];
+                                console.log('  [' + i + '] ID:', cell.getId(), 
+                                          'Type:', graph.getModel().isVertex(cell) ? 'Vertex' : 'Edge',
+                                          'Value:', graph.getModel().getValue(cell));
+                            }
+                        }
+                        
+                        console.log('========================');
+                    } else {
+                        console.log('선택된 객체가 없습니다.');
+                    }
+                    
                     updatePropertiesPanel(cell);
                 });
                 
