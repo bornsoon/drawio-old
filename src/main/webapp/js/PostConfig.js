@@ -95,13 +95,28 @@ window.addEventListener('load', function() {
                     // 속성 입력 필드들 생성
                     propertyInputs = {};
                     
-                    // 기본 속성들
-                    var defaultProps = ['label', 'tooltip', 'placeholders', 'height'];
+                    // 기본 속성들과 타입 정의
+                    var defaultProps = [
+                        {name: 'label', type: 'text'},
+                        {name: 'tooltip', type: 'text'},
+                        {name: 'placeholders', type: 'text'},
+                        {name: 'height', type: 'number'},
+                        {name: 'width', type: 'number'},
+                        {name: 'color', type: 'color'},
+                        {name: 'fillColor', type: 'color'},
+                        {name: 'strokeColor', type: 'color'},
+                        {name: 'visible', type: 'checkbox'},
+                        {name: 'enabled', type: 'checkbox'},
+                        {name: 'url', type: 'url'},
+                        {name: 'link', type: 'url'}
+                    ];
                     
                     // 기본 속성들 표시 (편집 가능)
                     for (var i = 0; i < defaultProps.length; i++)
                     {
-                        var propName = defaultProps[i];
+                        var propDef = defaultProps[i];
+                        var propName = propDef.name;
+                        var propType = propDef.type;
                         var propValue = '';
                         
                         if (mxUtils.isNode(value))
@@ -109,7 +124,7 @@ window.addEventListener('load', function() {
                             propValue = value.getAttribute(propName) || '';
                         }
                         
-                        content += createPropertyField(propName, propValue, cell);
+                        content += createPropertyField(propName, propValue, cell, propType);
                     }
                     
                     // 기존 속성들 표시 (기본 속성 제외)
@@ -118,9 +133,14 @@ window.addEventListener('load', function() {
                         var attrName = attrs[i].nodeName;
                         var attrValue = attrs[i].nodeValue;
                         
-                        if (mxUtils.indexOf(defaultProps, attrName) < 0)
+                        // 기본 속성 이름들만 추출하여 비교
+                        var defaultPropNames = defaultProps.map(function(prop) { return prop.name; });
+                        
+                        if (mxUtils.indexOf(defaultPropNames, attrName) < 0)
                         {
-                            content += createPropertyField(attrName, attrValue, cell);
+                            // 속성 이름으로 타입 추측
+                            var guessedType = guessPropertyType(attrName, attrValue);
+                            content += createPropertyField(attrName, attrValue, cell, guessedType);
                         }
                     }
                     
@@ -167,14 +187,76 @@ window.addEventListener('load', function() {
                 }
                 
                 /**
+                 * 속성 타입 추측 함수
+                 */
+                function guessPropertyType(name, value) {
+                    var nameLower = name.toLowerCase();
+                    
+                    // 숫자 관련 속성들
+                    if (nameLower.includes('width') || nameLower.includes('height') || 
+                        nameLower.includes('size') || nameLower.includes('radius') ||
+                        nameLower.includes('angle') || nameLower.includes('count') ||
+                        nameLower.includes('number') || nameLower.includes('value') ||
+                        nameLower.includes('index') || nameLower.includes('id')) {
+                        return 'number';
+                    }
+                    
+                    // 색상 관련 속성들
+                    if (nameLower.includes('color') || nameLower.includes('fill') ||
+                        nameLower.includes('stroke') || nameLower.includes('bg')) {
+                        return 'color';
+                    }
+                    
+                    // 불린 관련 속성들
+                    if (nameLower.includes('enabled') || nameLower.includes('visible') ||
+                        nameLower.includes('active') || nameLower.includes('show') ||
+                        nameLower.includes('hide') || nameLower.includes('lock')) {
+                        return 'checkbox';
+                    }
+                    
+                    // URL 관련 속성들
+                    if (nameLower.includes('url') || nameLower.includes('link') ||
+                        nameLower.includes('href') || nameLower.includes('src')) {
+                        return 'url';
+                    }
+                    
+                    // 기본값이 숫자인지 확인
+                    if (!isNaN(value) && value !== '') {
+                        return 'number';
+                    }
+                    
+                    // 기본값이 불린인지 확인
+                    if (value === 'true' || value === 'false') {
+                        return 'checkbox';
+                    }
+                    
+                    return 'text';
+                }
+                
+                /**
                  * 속성 필드 생성
                  */
-                function createPropertyField(name, value, cell)
+                function createPropertyField(name, value, cell, type)
                 {
+                    type = type || 'text';
                     var fieldId = 'prop_' + name;
                     var content = '<div style="margin-bottom:10px;">';
                     content += '<label style="display:block;margin-bottom:5px;font-weight:bold;color:#555;">' + name + ':</label>';
-                    content += '<input type="text" id="' + fieldId + '" value="' + (value || '') + '" style="width:100%;padding:5px;border:1px solid #ddd;border-radius:3px;">';
+                    
+                    // 타입에 따른 입력 필드 생성
+                    if (type === 'checkbox') {
+                        var checked = (value === 'true' || value === true) ? 'checked' : '';
+                        content += '<input type="checkbox" id="' + fieldId + '" ' + checked + ' style="margin-right:5px;">';
+                        content += '<span style="font-size:11px;color:#666;">' + (checked ? 'Enabled' : 'Disabled') + '</span>';
+                    } else if (type === 'color') {
+                        content += '<input type="color" id="' + fieldId + '" value="' + (value || '#000000') + '" style="width:50px;height:30px;border:1px solid #ddd;border-radius:3px;">';
+                        content += '<input type="text" id="' + fieldId + '_text" value="' + (value || '#000000') + '" style="width:calc(100% - 60px);margin-left:5px;padding:5px;border:1px solid #ddd;border-radius:3px;">';
+                    } else {
+                        var inputType = (type === 'number') ? 'number' : (type === 'url') ? 'url' : 'text';
+                        var step = (type === 'number') ? 'step="any"' : '';
+                        content += '<input type="' + inputType + '" id="' + fieldId + '" value="' + (value || '') + '" ' + step + ' style="width:100%;padding:5px;border:1px solid #ddd;border-radius:3px;">';
+                    }
+                    
                     content += '<button onclick="removeProperty(\'' + name + '\', \'' + cell.getId() + '\')" style="background:#f44336;color:white;border:none;padding:3px 6px;border-radius:2px;cursor:pointer;font-size:10px;margin-left:5px;">Remove</button>';
                     content += '</div>';
                     
@@ -190,18 +272,49 @@ window.addEventListener('load', function() {
                             input.onchange = null;
                             input.onblur = null;
                             
-                            // 새로운 이벤트 리스너 추가
-                            input.onchange = function(name) {
-                                return function() {
-                                    updateCellProperty(cell, name, this.value);
-                                };
-                            }(name);
-                            
-                            input.onblur = function(name) {
-                                return function() {
-                                    updateCellProperty(cell, name, this.value);
-                                };
-                            }(name);
+                            // 타입별 이벤트 리스너 추가
+                            if (type === 'checkbox') {
+                                input.onchange = function(name) {
+                                    return function() {
+                                        updateCellProperty(cell, name, this.checked.toString());
+                                    };
+                                }(name);
+                            } else if (type === 'color') {
+                                var textInput = document.getElementById(fieldId + '_text');
+                                if (textInput != null) {
+                                    input.onchange = function(name) {
+                                        return function() {
+                                            var textInput = document.getElementById(fieldId + '_text');
+                                            if (textInput != null) {
+                                                textInput.value = this.value;
+                                            }
+                                            updateCellProperty(cell, name, this.value);
+                                        };
+                                    }(name);
+                                    
+                                    textInput.onchange = function(name) {
+                                        return function() {
+                                            var colorInput = document.getElementById(fieldId);
+                                            if (colorInput != null) {
+                                                colorInput.value = this.value;
+                                            }
+                                            updateCellProperty(cell, name, this.value);
+                                        };
+                                    }(name);
+                                }
+                            } else {
+                                input.onchange = function(name) {
+                                    return function() {
+                                        updateCellProperty(cell, name, this.value);
+                                    };
+                                }(name);
+                                
+                                input.onblur = function(name) {
+                                    return function() {
+                                        updateCellProperty(cell, name, this.value);
+                                    };
+                                }(name);
+                            }
                         }
                     }, 0);
                     
